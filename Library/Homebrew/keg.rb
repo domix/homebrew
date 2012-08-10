@@ -42,7 +42,7 @@ class Keg < Pathname
         Find.prune if src.directory?
       end
     end
-    linked_keg_record.unlink if linked_keg_record.exist?
+    linked_keg_record.unlink if linked_keg_record.symlink?
     n
   end
 
@@ -117,7 +117,13 @@ class Keg < Pathname
 
     linked_keg_record.make_relative_symlink(self) unless mode == :dryrun
 
+    optlink
+
     return $n + $d
+  end
+
+  def optlink
+    (HOMEBREW_PREFIX/:opt/fname).make_relative_symlink(self)
   end
 
 protected
