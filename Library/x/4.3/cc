@@ -1,0 +1,78 @@
+#!/bin/sh
+#TODO remove -g, -O2, etc. We determine these flags
+
+source .brew_profile
+
+DRIVER=`basename $0`
+CFLAGS="-pipe"
+
+case "$DRIVER" in
+cc)
+  [ $CC ] && DRIVER="$(basename $CC)";;
+c++)
+  [ $CXX ] && DRIVER="$(basename $CXX)";;
+esac
+
+for x in $HOMEBREW_DEP_PREFIXES; do
+  x="$HOMEBREW_PREFIX/opt/$x"
+  [ -d "$x/lib" ] && LDFLAGS="-L$x/lib $LDFLAGS"
+  [ -d "$x/include" ] && CPPFLAGS="-I$x/include $CPPFLAGS"
+done
+
+if [ $NCLT ]; then
+  # setting --sysroot removes /usr/include /usr/local/include etc. from the
+  # search paths. So we must add HOMEBREW_PREFIX/include even if /usr/local.
+  CPPFLAGS="--sysroot=$SDKROOT -I$HOMEBREW_PREFIX/include $CPPFLAGS"
+  [ $NLXML2 ] || CPPFLAGS="$CPPFLAGS -I$SDKROOT/usr/include/libxml2"
+  LDFLAGS="-L$HOMEBREW_PREFIX/lib $LDFLAGS"
+else
+  DRIVER="/usr/bin/$DRIVER"
+  [ $NLXML2 ] || CPPFLAGS="-I/usr/include/libxml2 $CPPFLAGS"
+  if [ "$HOMEBREW_PREFIX" != "/usr/local" ]; then
+    CPPFLAGS="-I$HOMEBREW_PREFIX/include $CPPFLAGS"
+    LDFLAGS="-L$HOMEBREW_PREFIX/lib $LDFLAGS"
+  fi
+fi
+
+if [ $X11_PREFIX ]; then
+  LDFLAGS="-L$X11_PREFIX/lib $LDFLAGS"
+  CPPFLAGS="-I$X11_PREFIX/include -I$X11_PREFIX/include/freetype2 $CPPFLAGS"
+fi
+
+case "$DRIVER" in
+ld)
+  unset CFLAGS
+  unset CPPFLAGS;;
+cpp)
+  unset LDFLAGS
+  unset CFLAGS
+
+  case "$CC" in
+  clang*|cc|c++)
+    # the "cpp" tool is llvm-gcc and chokes on some of the SDK system headers :P
+    DRIVER="clang -E";;
+  esac
+  ;;
+*)
+  case "$DRIVER" in
+  clang*|cc|c++)
+    # We set "O" when make is called to prevent optimising during configure
+    # This is not ideal, since make isn't the only time we want to optimize...
+    [[ $HOMEBREW_OPTS == *O* ]] && CFLAGS="-march=native -w -Os"
+    # We pass linker flags to cc because most build systems make no distinction
+    # between when they call for a compiler or linker. Thus clang generates
+    # spurious warnings. TODO don't do this: may hide essential information!
+    FLAGS="$FLAGS -Qunused-arguments";;
+  esac
+  # If we're bottling then forget all previously set CFLAGS
+  [[ $HOMEBREW_OPTS == *b*O* ]] && CFLAGS="-mtune=generic"
+esac
+
+[ $HOMEBREW_VERBOSE ] && FLAGS="-v $FLAGS"
+[[ $HOMEBREW_OPTS == *u*O* ]] && CFLAGS="-arch i386 -arch x86_64 $CFLAGS"
+[ $NCLT ] && DRIVER="xcrun $DRIVER"
+
+# very handy to see exactly what is being executed
+[ $HOMEBREW_LOG ] && echo $DRIVER $FLAGS $CFLAGS $CPPFLAGS $LDFLAGS "$@" "\n" >> ~/cc.log
+
+exec $DRIVER $FLAGS $CFLAGS $CPPFLAGS $LDFLAGS "$@"

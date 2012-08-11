@@ -286,30 +286,22 @@ class Formula
     Dir["#{HOMEBREW_REPOSITORY}/Library/Formula/*.rb"].map{ |f| File.basename f, '.rb' }.sort
   end
 
-  # an array of all Formula, instantiated
-  def self.all
-    map{ |f| f }
-  end
-  def self.map
-    rv = []
-    each{ |f| rv << yield(f) }
-    rv
-  end
   def self.each
-    names.each do |n|
+    names.each do |name|
       begin
-        yield Formula.factory(n)
+        yield Formula.factory(name)
       rescue
         # Don't let one broken formula break commands. But do complain.
-        onoe "Formula #{n} will not import."
+        onoe "Formula #{name} will not import."
       end
     end
   end
-
-  def self.select
-    ff = []
-    each{ |f| ff << f if yield(f) }
-    ff
+  class << self
+    include Enumerable
+  end
+  def self.all
+    opoo "Formula.all is deprecated, simply use Formula.map"
+    map
   end
 
   def self.installed
@@ -462,6 +454,8 @@ protected
     removed_ENV_variables = case if args.empty? then cmd.split(' ').first else cmd end
     when "xcodebuild"
       ENV.remove_cc_etc
+    when /^make\b/
+      ENV.append 'HOMEBREW_OPTS', "O", ''
     end
 
     if ARGV.verbose?
@@ -492,6 +486,8 @@ protected
 
   rescue
     raise BuildError.new(self, cmd, args, $?)
+  ensure
+    ENV['HOMEBREW_OPTS'] = ENV['HOMEBREW_OPTS'].delete('O') if ENV['HOMEBREW_OPTS']
   end
 
 public

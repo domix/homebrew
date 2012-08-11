@@ -20,6 +20,7 @@ class Libxml2 < Formula
   end
 
   def install
+    ENV['NLXML2'] = "1" # stops superenv automatically using system libxml2
     ENV.universal_binary if ARGV.build_universal?
 
     system "./configure", "--prefix=#{prefix}", "--without-python"

@@ -1,3 +1,10 @@
+# On 10.7 you get /usr/X11/include provided you install Xcode < 4.3 or the CLT
+# On 10.8 you don't, you have to install XQuartz
+# XQuartz can possibly be installed on < 10.8
+# The SDKs < 10.8 have X11 includes and libs, but not the config tools
+# NOTE even 10.8 has some stuff in /usr/X11/lib but these are useless because
+# we don't have the includes.
+
 module MacOS::XQuartz extend self
   FORGE_BUNDLE_ID = "org.macosforge.xquartz.X11"
   APPLE_BUNDLE_ID = "org.x.X11"

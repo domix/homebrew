@@ -1,0 +1,30 @@
+#!/bin/sh
+
+source .brew_profile
+CMAKE="$HOMEBREW_PREFIX/bin/cmake"
+
+if [ -x "$CMAKE" ]; then
+  CMAKE_PREFIX_PATH="$HOMEBREW_PREFIX"
+  for x in $HOMEBREW_DEP_PREFIXES; do
+    CMAKE_PREFIX_PATH="$HOMEBREW_PREFIX/opt/$x:$CMAKE_PREFIX_PATH"
+  done
+  if [ $NCLT ]; then
+    CMAKE_PREFIX_PATH="$SDKROOT:$CMAKE_PREFIX_PATH"
+    CMAKE_FRAMEWORK_PATH="$SDKROOT/System/Library/Frameworks"
+    CMAKE_INCLUDE_PATH="$SDKROOT/usr/include/libxml2"
+  else
+    CMAKE_INCLUDE_PATH="/usr/include/libxml2"
+  fi
+  if [ -d $X11_PREFIX ]; then
+    CMAKE_PREFIX_PATH="$X11_PREFIX:$CMAKE_PREFIX_PATH"
+    CMAKE_INCLUDE_PATH="$X11_PREFIX/include/freetype2:$CMAKE_INCLUDE_PATH"
+  fi
+
+  export CMAKE_PREFIX_PATH CMAKE_INCLUDE_PATH CMAKE_FRAMEWORK_PATH
+
+  exec "$CMAKE" "$@"
+
+else
+  echo "You need to: brew install cmake"
+  exit 1
+fi

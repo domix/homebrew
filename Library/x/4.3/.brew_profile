@@ -1,0 +1,23 @@
+HOMEBREW_PREFIX=$(dirname $(dirname $(dirname $(cd $(dirname $0) && pwd))))
+[ -x /usr/bin/cc ] || NCLT="1"
+
+if [ -d "/usr/X11/include" ]; then
+  X11_PREFIX="/usr/X11"
+elif [ -d "/opt/X11/include" ]; then
+  X11_PREFIX="/opt/X11"
+fi
+
+[[ " $HOMEBREW_DEP_PREFIXES " == *" libxml2 "* ]] && NLXML2="1"
+
+if [ $NCLT ]; then
+  [ $HOMEBREW_MACOS ] || HOMEBREW_MACOS="$MACOS_DEPLOYMENT_TARGET"
+  [ $HOMEBREW_MACOS ] || macosv=$(/usr/bin/sw_vers -productVersion)
+
+  [ $DEVELOPER_DIR ] || DEVELOPER_DIR=$("xcode-select" -print-path)
+  [ "$DEVELOPER_DIR" == "/" ] && unset DEVELOPER_DIR # invalid settings
+  [ $DEVELOPER_DIR ] || DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
+  SDKROOT="$DEVELOPER_DIR/Platforms/MacOSX.platform/Developer/SDKs/MacOSX$HOMEBREW_MACOS.sdk"
+
+  # If we're using the 10.7 SDK, then there is an X11 prefix in there
+  [ -d "$SDKROOT/usr/X11/include" ] && X11_PREFIX="$SDKROOT/usr/X11"
+fi

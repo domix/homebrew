@@ -1,0 +1,15 @@
+#!/bin/sh
+
+source .brew_profile
+AUTOCONF="$HOMEBREW_PREFIX/bin/autoconf"
+
+if [ -x "$AUTOCONF" ]; then
+  ACLOCAL_PATH="-I$HOMEBREW_PREFIX/share/aclocal"
+  for x in $HOMEBREW_DEP_PREFIXES; do
+    ACLOCAL_PATH="-I$HOMEBREW_PREFIX/opt/$x/share/aclocal $ACLOCAL_PATH"
+  done
+  exec "$AUTOCONF" $ACLOCAL_PATH "$@"
+else
+  echo "You need to: brew install autoconf"
+  exit 1
+fi
